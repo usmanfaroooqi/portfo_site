@@ -1,0 +1,86 @@
+(globalThis.TURBOPACK||(globalThis.TURBOPACK=[])).push(["object"==typeof document?document.currentScript:void 0,97061,e=>{"use strict";var o=e.i(9306),i=e.i(83266),t=e.i(85390),r=e.i(52095);let l=`
+  attribute vec2 position;
+  void main() {
+    gl_Position = vec4(position, 0.0, 1.0);
+  }
+`,a=`
+  precision highp float;
+  uniform vec2 uResolution;
+  uniform float uTime;
+
+  vec3 color1 = vec3(0.08, 0.12, 0.18);
+  vec3 color2 = vec3(0.12, 0.18, 0.28);
+  vec3 color3 = vec3(0.18, 0.28, 0.38);
+  vec3 color4 = vec3(0.28, 0.38, 0.48);
+  vec3 color5 = vec3(0.45, 0.38, 0.32);
+  vec3 color6 = vec3(0.62, 0.55, 0.48);
+  vec3 color7 = vec3(0.38, 0.42, 0.48);
+
+  float random(vec2 st) {
+    return fract(sin(dot(st.xy, vec2(12.9898, 78.233))) * 43758.5453123);
+  }
+
+  float noise(vec2 st) {
+    vec2 i = floor(st);
+    vec2 f = fract(st);
+    float a = random(i);
+    float b = random(i + vec2(1.0, 0.0));
+    float c = random(i + vec2(0.0, 1.0));
+    float d = random(i + vec2(1.0, 1.0));
+    vec2 u = f * f * (3.0 - 2.0 * f);
+    return mix(a, b, u.x) + (c - a) * u.y * (1.0 - u.x) + (d - b) * u.x * u.y;
+  }
+
+  float wave(vec2 uv, vec2 center, float radius, float speed, float frequency, float phase) {
+    float dist = distance(uv, center);
+    float wave = sin((dist - uTime * speed + phase) * frequency);
+    float falloff = 1.0 - smoothstep(0.0, radius, dist);
+    return wave * falloff;
+  }
+
+  void main() {
+    vec2 uv = gl_FragCoord.xy / uResolution;
+
+    vec2 c1 = vec2(0.25 + sin(uTime * 0.09) * 0.15, 0.35 + cos(uTime * 0.065) * 0.12);
+    vec2 c2 = vec2(0.75 + cos(uTime * 0.11) * 0.18, 0.65 + sin(uTime * 0.085) * 0.14);
+    vec2 c3 = vec2(0.5 + sin(uTime * 0.075) * 0.12, 0.75 + cos(uTime * 0.125) * 0.1);
+    vec2 c4 = vec2(0.65 + cos(uTime * 0.06) * 0.1, 0.3 + sin(uTime * 0.1) * 0.15);
+    vec2 c5 = vec2(0.4 + sin(uTime * 0.14) * 0.08, 0.5 + cos(uTime * 0.08) * 0.09);
+
+    float w1 = wave(uv, c1, 1.4, 0.06, 9.0, 0.0);
+    float w2 = wave(uv, c2, 1.2, 0.075, 11.0, 1.5);
+    float w3 = wave(uv, c3, 1.5, 0.09, 7.0, 3.0);
+    float w4 = wave(uv, c4, 1.1, 0.11, 12.0, 4.5);
+    float w5 = wave(uv, c5, 1.3, 0.07, 8.5, 2.0);
+
+    float combined = (w1 + w2 + w3 + w4 + w5) * 0.35;
+    combined += noise(uv * 5.0 + uTime * 0.025) * 0.15;
+
+    // Add dithering to reduce banding
+    float dither = (noise(uv * 200.0) - 0.5) * 0.01;
+    combined += dither;
+    
+    float spatialGradient = length(uv - 0.5);
+    float horizontalGradient = uv.x;
+    
+    // Smoother color transitions with wider ranges
+    vec3 finalColor = color1;
+    finalColor = mix(finalColor, color2, smoothstep(-0.5, 0.0, combined));
+    finalColor = mix(finalColor, color3, smoothstep(-0.2, 0.3, combined));
+    finalColor = mix(finalColor, color4, smoothstep(0.0, 0.5, combined));
+    finalColor = mix(finalColor, color7, smoothstep(0.2, 0.7, combined) * (1.0 - spatialGradient));
+    finalColor = mix(finalColor, color5, smoothstep(0.4, 0.9, combined));
+    finalColor = mix(finalColor, color6, smoothstep(0.6, 1.2, combined));
+    
+    vec3 spatialTint = mix(color2, color5, horizontalGradient * 0.3);
+    finalColor = mix(finalColor, spatialTint, 0.1);
+    
+    float vignette = 1.0 - pow(length(uv - 0.5), 1.5) * 0.6;
+    finalColor *= vignette;
+    
+    float glow = smoothstep(0.5, 1.0, combined) * 0.15;
+    finalColor += vec3(glow * 0.8, glow * 0.7, glow * 0.6);
+    
+    gl_FragColor = vec4(finalColor, 1.0);
+  }
+`;e.s(["BlobShaderBackground",0,class{renderer;geometry;program;mesh;constructor(e){this.renderer=new r.Renderer({canvas:e,dpr:1,webgl:2,alpha:!1}),this.geometry=new o.Geometry(this.renderer.gl,{position:{size:2,data:new Float32Array([-1,-1,3,-1,-1,3])}}),this.program=new t.Program(this.renderer.gl,{vertex:l,fragment:a,uniforms:{uResolution:{value:[e.width,e.height]},uTime:{value:0}}}),this.mesh=new i.Mesh(this.renderer.gl,{geometry:this.geometry,program:this.program})}update(e){this.program.uniforms.uTime.value=e,this.program.uniforms.uResolution.value=[this.renderer.gl.canvas.width,this.renderer.gl.canvas.height],this.renderer.render({scene:this.mesh})}resize(e,o){this.renderer.setSize(e,o)}dispose(){this.geometry.remove(),this.program.remove()}}])},99266,e=>{"use strict";var o=e.i(45830),i=e.i(28278),t=e.i(52610),r=e.i(97061),l=e.i(62316),a=e.i(64663);e.s(["BackgroundCanvas",0,function(e){let n,c,s,m,u,v,f,d,h,g,p,w,b=(0,i.c)(20);b[0]!==e?({style:s,active:m,className:n,...c}=e,b[0]=e,b[1]=n,b[2]=c,b[3]=s,b[4]=m):(n=b[1],c=b[2],s=b[3],m=b[4]);let C=void 0===m||m,T=(0,t.useRef)(null),y=(0,t.useRef)(null),x=(0,t.useRef)(null);b[5]===Symbol.for("react.memo_cache_sentinel")?(u=()=>{let e=T.current,o=y.current;if(e&&o)try{let i=new r.BlobShaderBackground(e);x.current=i;let t=()=>{let e=o.getBoundingClientRect();i.resize(e.width,e.height)};t();let l=new ResizeObserver(t);return l.observe(o),()=>{l.disconnect(),i.dispose(),x.current=null}}catch{}},v=[],b[5]=u,b[6]=v):(u=b[5],v=b[6]),(0,t.useEffect)(u,v),b[7]===Symbol.for("react.memo_cache_sentinel")?(f=(e,o)=>{let i=x.current;i&&i.update(o)},b[7]=f):f=b[7];let R=f;b[8]!==C?(d={isActive:C,onFrame:R},b[8]=C,b[9]=d):d=b[9],(0,l.useAnimationFrame)(d);let _=c.mask||"linear-gradient(to bottom, transparent 0%, black 50%)";return b[10]!==n?(h=(0,a.cn)("absolute inset-0 w-full h-full",n),b[10]=n,b[11]=h):h=b[11],b[12]!==_||b[13]!==s?(g={maskImage:_,WebkitMaskImage:_,...s},b[12]=_,b[13]=s,b[14]=g):g=b[14],b[15]===Symbol.for("react.memo_cache_sentinel")?(p=(0,o.jsx)("canvas",{ref:T}),b[15]=p):p=b[15],b[16]!==c||b[17]!==h||b[18]!==g?(w=(0,o.jsx)("div",{className:h,style:g,ref:y,...c,children:p}),b[16]=c,b[17]=h,b[18]=g,b[19]=w):w=b[19],w}])},16655,e=>{e.n(e.i(99266))}]);

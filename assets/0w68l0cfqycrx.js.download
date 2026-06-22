@@ -1,0 +1,90 @@
+(globalThis.TURBOPACK||(globalThis.TURBOPACK=[])).push(["object"==typeof document?document.currentScript:void 0,22213,e=>{"use strict";var o=e.i(45830),r=e.i(28278),i=e.i(52610),t=e.i(9306),l=e.i(83266),n=e.i(85390),c=e.i(52095);let a=`
+  attribute vec2 position;
+  void main() {
+    gl_Position = vec4(position, 0.0, 1.0);
+  }
+`,s={default:{color1:[.08,.12,.18],color2:[.12,.18,.28],color3:[.18,.28,.38],color4:[.28,.38,.48],color5:[.45,.38,.32],color6:[.62,.55,.48],color7:[.38,.42,.48]},bright:{color1:[.659,.753,.827],color2:[.827,.898,.898],color3:[.498,.647,.769],color4:[.941,.937,.902],color5:[.827,.898,.898],color6:[.89,.902,.902],color7:[.659,.753,.827]}};class u{renderer;geometry;program;mesh;constructor(e,o={}){const{palette:r="default",speed:i=1}=o;this.renderer=new c.Renderer({canvas:e,dpr:1,webgl:2,alpha:!0}),this.geometry=new t.Geometry(this.renderer.gl,{position:{size:2,data:new Float32Array([-1,-1,3,-1,-1,3])}}),this.program=new n.Program(this.renderer.gl,{vertex:a,fragment:((e="default",o=1)=>{let r=s[e];return`
+    precision highp float;
+    uniform vec2 uResolution;
+    uniform float uTime;
+
+    vec3 color1 = vec3(${r.color1.join(", ")});
+    vec3 color2 = vec3(${r.color2.join(", ")});
+    vec3 color3 = vec3(${r.color3.join(", ")});
+    vec3 color4 = vec3(${r.color4.join(", ")});
+    vec3 color5 = vec3(${r.color5.join(", ")});
+    vec3 color6 = vec3(${r.color6.join(", ")});
+    vec3 color7 = vec3(${r.color7.join(", ")});
+
+    float random(vec2 st) {
+      return fract(sin(dot(st.xy, vec2(12.9898, 78.233))) * 43758.5453123);
+    }
+
+    float noise(vec2 st) {
+      vec2 i = floor(st);
+      vec2 f = fract(st);
+      float a = random(i);
+      float b = random(i + vec2(1.0, 0.0));
+      float c = random(i + vec2(0.0, 1.0));
+      float d = random(i + vec2(1.0, 1.0));
+      vec2 u = f * f * (3.0 - 2.0 * f);
+      return mix(a, b, u.x) + (c - a) * u.y * (1.0 - u.x) + (d - b) * u.x * u.y;
+    }
+
+    float wave(vec2 uv, vec2 center, float radius, float speed, float frequency, float phase) {
+      float dist = distance(uv, center);
+      float wave = sin((dist - uTime * speed + phase) * frequency);
+      float falloff = 1.0 - smoothstep(0.0, radius, dist);
+      return wave * falloff;
+    }
+
+    void main() {
+      vec2 uv = gl_FragCoord.xy / uResolution;
+
+      // Create multiple dynamic wave centers
+      vec2 c1 = vec2(0.25 + sin(uTime * ${.18*o}) * 0.15, 0.35 + cos(uTime * ${.13*o}) * 0.12);
+      vec2 c2 = vec2(0.75 + cos(uTime * ${.22*o}) * 0.18, 0.65 + sin(uTime * ${.17*o}) * 0.14);
+      vec2 c3 = vec2(0.5 + sin(uTime * ${.15*o}) * 0.12, 0.75 + cos(uTime * ${.25*o}) * 0.1);
+      vec2 c4 = vec2(0.65 + cos(uTime * ${.12*o}) * 0.1, 0.3 + sin(uTime * ${.2*o}) * 0.15);
+      vec2 c5 = vec2(0.4 + sin(uTime * ${.28*o}) * 0.08, 0.5 + cos(uTime * ${.16*o}) * 0.09);
+
+      float w1 = wave(uv, c1, 1.4, ${.12*o}, 9.0, 0.0);
+      float w2 = wave(uv, c2, 1.2, ${.15*o}, 11.0, 1.5);
+      float w3 = wave(uv, c3, 1.5, ${.18*o}, 7.0, 3.0);
+      float w4 = wave(uv, c4, 1.1, ${.22*o}, 12.0, 4.5);
+      float w5 = wave(uv, c5, 1.3, ${.14*o}, 8.5, 2.0);
+
+      float combined = (w1 + w2 + w3 + w4 + w5) * 0.35;
+      combined += noise(uv * 5.0 + uTime * ${.05*o}) * 0.15;
+
+      // Add dithering to reduce banding
+      float dither = (noise(uv * 200.0) - 0.5) * 0.01;
+      combined += dither;
+      
+      float spatialGradient = length(uv - 0.5);
+      float horizontalGradient = uv.x;
+      
+      // Build complex color mixing
+      vec3 finalColor = color1;
+      finalColor = mix(finalColor, color2, smoothstep(-0.4, -0.1, combined));
+      finalColor = mix(finalColor, color3, smoothstep(-0.1, 0.15, combined));
+      finalColor = mix(finalColor, color4, smoothstep(0.15, 0.4, combined));
+      finalColor = mix(finalColor, color7, smoothstep(0.4, 0.6, combined) * (1.0 - spatialGradient));
+      finalColor = mix(finalColor, color5, smoothstep(0.6, 0.8, combined));
+      finalColor = mix(finalColor, color6, smoothstep(0.8, 1.0, combined));
+      
+      // Add subtle color variation based on position
+      vec3 spatialTint = mix(color2, color5, horizontalGradient * 0.3);
+      finalColor = mix(finalColor, spatialTint, 0.1);
+      
+      // Enhanced vignette with softer falloff
+      float vignette = 1.0 - pow(length(uv - 0.5), 1.5) * 0.6;
+      finalColor *= vignette;
+      
+      // Subtle glow on wave peaks
+      float glow = smoothstep(0.5, 1.0, combined) * 0.15;
+      finalColor += vec3(glow * 0.8, glow * 0.7, glow * 0.6);
+      
+      gl_FragColor = vec4(finalColor, 1.0);
+    }
+  `})(r,i),uniforms:{uResolution:{value:[e.width,e.height]},uTime:{value:0}},transparent:!0}),this.mesh=new l.Mesh(this.renderer.gl,{geometry:this.geometry,program:this.program})}update(e){this.program.uniforms.uTime.value=e,this.program.uniforms.uResolution.value=[this.renderer.gl.canvas.width,this.renderer.gl.canvas.height],this.renderer.render({scene:this.mesh})}resize(e,o){this.renderer.setSize(e,o)}dispose(){this.geometry.remove(),this.program.remove()}}var m=e.i(62316),v=e.i(64663);function d(e){let t,l,n,c,a,s,d,f=(0,r.c)(11),{className:h,palette:g,speed:p}=e,w=void 0===g?"default":g,b=void 0===p?1:p,C=(0,i.useRef)(null),$=(0,i.useRef)(null),T=(0,i.useRef)(null);f[0]!==w||f[1]!==b?(t=()=>{let e=C.current,o=$.current;if(e&&o)try{let r=new u(e,{palette:w,speed:b});T.current=r;let i=()=>{let e=o.getBoundingClientRect();r.resize(e.width,e.height)};i();let t=new ResizeObserver(i);return t.observe(o),()=>{t.disconnect(),r.dispose(),T.current=null}}catch(e){console.error("Failed to initialize PricingBlobShader:",e)}},l=[w,b],f[0]=w,f[1]=b,f[2]=t,f[3]=l):(t=f[2],l=f[3]),(0,i.useEffect)(t,l),f[4]===Symbol.for("react.memo_cache_sentinel")?(n=(e,o)=>{let r=T.current;r&&r.update(o)},f[4]=n):n=f[4];let x=n;return f[5]===Symbol.for("react.memo_cache_sentinel")?(c={isActive:!0,onFrame:x},f[5]=c):c=f[5],(0,m.useAnimationFrame)(c),f[6]!==h?(a=(0,v.cn)("absolute inset-0 pointer-events-none overflow-hidden",h),f[6]=h,f[7]=a):a=f[7],f[8]===Symbol.for("react.memo_cache_sentinel")?(s=(0,o.jsx)("canvas",{ref:C,"aria-hidden":"true"}),f[8]=s):s=f[8],f[9]!==a?(d=(0,o.jsx)("div",{ref:$,className:a,children:s}),f[9]=a,f[10]=d):d=f[10],d}e.s(["GradientShader",0,d,"default",0,d],22213)},15991,e=>{e.n(e.i(22213))}]);
